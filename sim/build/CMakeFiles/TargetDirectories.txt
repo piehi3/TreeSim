@@ -1,3 +1,0 @@
-/mnt/c/Users/splat/source/repos/tree_sim/sim/build/CMakeFiles/rebuild_cache.dir
-/mnt/c/Users/splat/source/repos/tree_sim/sim/build/CMakeFiles/edit_cache.dir
-/mnt/c/Users/splat/source/repos/tree_sim/sim/build/CMakeFiles/tree_simulator.dir
