@@ -10,6 +10,7 @@ LEAF=0
 BRANCH=1
 KILL=9
 ERROR_KIND = -1
+NONE_KIND = -2
 
 LEAF_POWER=1.5
 LEAD_BUILD=5.0
@@ -22,7 +23,9 @@ def getKindNear(model,cell,pos):
     p = cell.pos+pos
     if(np.any(p>model.shape)):
         return ERROR_KIND
-    return model[p[0],p[1],p[2]]
+    if(model[p[0],p[1],p[2]]==None):
+        return NONE_KIND
+    return model[p[0],p[1],p[2]].kind
     
 class Tree(object): pass
 

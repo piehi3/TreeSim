@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/mnt/c/Users/splat/source/repos/tree_sim/sim/TreeSim.cxx
+TreeSim.hxx
+/mnt/c/Users/splat/source/repos/tree_sim/sim/TreeSim.hxx
+algorithm
+-
+iterator
+-
+
+/mnt/c/Users/splat/source/repos/tree_sim/sim/TreeSim.hxx
+array
+-
+vector
+-
+random
+-
+iostream
+-
+Vec3i.hxx
+/mnt/c/Users/splat/source/repos/tree_sim/sim/Vec3i.hxx
+pybind11/pybind11.h
+-
+pybind11/stl.h
+-
+
+/mnt/c/Users/splat/source/repos/tree_sim/sim/Vec3i.hxx
+ostream
+-
+
+/mnt/c/Users/splat/source/repos/tree_sim/sim/module.cpp
+TreeSim.cxx
+/mnt/c/Users/splat/source/repos/tree_sim/sim/TreeSim.cxx
+pybind11/pybind11.h
+-
+

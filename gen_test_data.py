@@ -8,7 +8,7 @@ import time
 LR = 1e-3
 goal_steps = 6000
 score_requirement = 3000#this time in terms of time
-initial_games = 5000
+initial_games = 5
 max_power_required=5.0
 INIT_TREE_POWER = 10.0
 
@@ -102,6 +102,7 @@ def generate_population(model):
     score_requirement = mean(accepted_scores)
  
     # just in case you wanted to reference later
+    print(training_data)
     training_data_save = np.array(training_data)
     np.save("score_"+str(score_requirement)+"_saved.npy", training_data_save)
  
