@@ -1,0 +1,2 @@
+model_checkpoint_path: "C:\\Users\\splat\\source\\repos\\tree_sim\\tree_trained.tflearn"
+all_model_checkpoint_paths: "C:\\Users\\splat\\source\\repos\\tree_sim\\tree_trained.tflearn"

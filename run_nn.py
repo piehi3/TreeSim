@@ -7,7 +7,7 @@ from collections import Counter
 from statistics import median, mean
 import numpy as np
 import random
-import tree_sim as ts
+import tree_sim_python as ts
 
 import matplotlib.pyplot as plt
 

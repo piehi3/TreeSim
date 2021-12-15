@@ -7,10 +7,10 @@
 
 #VPATH = degauss
 
-CFLAGS   = -g -O2 -Wall -Wuninitialized -std=gnu++17
+CFLAGS   = -g -O2 -Wall -Wuninitialized -std=gnu++17 -DNO_PYBIND=true
 CXXFLAGS = $(CFLAGS)
 
-CXX = g++
+CXX = /home/idwcorni/llvm-mingw-aarch64/bin/aarch64-w64-mingw32-g++
 
 #USE_VMICVME=1
 USE_GEFVME=1

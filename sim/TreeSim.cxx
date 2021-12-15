@@ -20,9 +20,10 @@ Cell::Cell(Tree* _tree,KIND _kind,double _opasity,Vec3i _pos
     kind(_kind),pos(_pos),alive(true),power_input(_power_input),power_max_output(_power_max_output)
     ,opasity(_opasity),tree(_tree),energy_to_build(_energy_to_build){}
 
-Observation Cell::getObservation(Model &model){
+Observation Cell::getObservation(Model &model,int move){
        
         return {double(pos.x),double(pos.y),double(pos.z),
+                double(move),
                 double(getKindNear(model,this,Vec3i(1,0,0))),
                 double(getKindNear(model,this,Vec3i(-1,0,0))),
                 double(getKindNear(model,this,Vec3i(0,1,0))),
@@ -93,6 +94,7 @@ double Leaf::getPowerOutput(Model &model){
     return this->power_max_output*optcity_multiplier;
 }
 
+
 bool Tree::growCycle(Model &model,Observation ob, int max_iter){
         int e1 = energy;
         
@@ -101,10 +103,14 @@ bool Tree::growCycle(Model &model,Observation ob, int max_iter){
         //for cell in self.cells:
         bool sucessful_action=false;
         //while(not sucessful_action):
-        std::vector<Cell*> chosen_cell;
-        std::sample(cells.begin(),cells.end(), std::back_inserter(chosen_cell),1,std::mt19937{std::random_device{}()});
+        std::vector<Cell*> chosen_cells;
+        Cell* chosen_cell;
+        while(chosen_cell==nullptr || !chosen_cell->isAlive() || chosen_cell->getKind()!=BRANCH)
+            chosen_cell = cells[ rand()%cells.size() ];
+        chosen_cells.push_back( chosen_cell );
+        //std::sample(cells.begin(),cells.end(), std::back_inserter(chosen_cell),1,std::mt19937{std::random_device{}()});
         
-        for(Cell* cell:cells){
+        for(Cell* cell:chosen_cells){
             if(!cell->isAlive())
                 return true;
             
@@ -136,7 +142,7 @@ bool Tree::growCycle(Model &model,Observation ob, int max_iter){
             cells.insert(cells.end(), new_cells.begin(),new_cells.end());
             new_cells.clear();
             power=energy-e1;
-            last_observation = cell->getObservation(model);
+            last_observation = cell->getObservation(model,move);
         }
        
         if(energy<0)
@@ -154,7 +160,7 @@ bool Tree::addCell(Model &model,KIND kind,Vec3i pos,Cell* growth_cell){
     }
     
     if(model[pos.x][pos.y][pos.z] != nullptr){
-        if(kind==KILL){
+        if(kind==KILL && model[pos.x][pos.y][pos.z]->getKind()==LEAF){
             model[pos.x][pos.y][pos.z]->killCell();
             model[pos.x][pos.y][pos.z] = nullptr;
             return true;
@@ -229,6 +235,62 @@ void TreeSim::createTree(Vec3i pos,Stratagy* stategy, double init_energy){
     trees.push_back(tree);
 }
 
+#ifndef NO_PYBIND
+template<class T>
+py::array_t<T> create_matrix(size_t x, size_t y, size_t z, T* data_ptr  = nullptr)
+{
+ return py::array_t<T>(
+        	py::buffer_info(
+	               data_ptr,
+		       sizeof(T), //itemsize
+		       py::format_descriptor<T>::format(),
+		       3, // ndim
+		       std::vector<size_t> { x, y, z }, // shape
+		       std::vector<size_t> {x * y * sizeof(T), y * sizeof(T), sizeof(T)} // strides
+           )
+    );
+}
+
+py::array_t<KIND> TreeSim::getModel(){//does this work?S
+    KINDModel kind_model;
+    for(size_t x = 0; x < MODEL_X; x++){
+        for(size_t y = 0; y < MODEL_Y; y++){
+            for(size_t z = 0; z < MODEL_Z; z++){
+                if(model[x][y][z]==nullptr){
+                    kind_model[x][y][z] = EMPTY;
+                }else{
+                    kind_model[x][y][z] = model[x][y][z]->getKind();
+                }
+            }
+        }
+    }
+    return create_matrix<KIND>(MODEL_X,MODEL_Y,MODEL_Z,&kind_model[0][0][0]);
+}
+#endif
+
+/*KINDModel TreeSim::getModel(){//does this work?S
+    KINDModel kind_model;
+    kind_model.reserve(MODEL_X);
+    for(size_t x = 0; x < MODEL_X; x++){
+        std::vector<std::vector<KIND>> ys;
+        ys.reserve(MODEL_Y);
+        for(size_t y = 0; y < MODEL_Y; y++){
+            std::vector<KIND> zs;
+            zs.reserve(MODEL_Z);
+            for(size_t z = 0; z < MODEL_Z; z++){
+                if(model[x][y][z]==nullptr){
+                    zs.push_back(EMPTY);
+                }else{
+                    zs.push_back(model[x][y][z]->getKind());
+                }
+            }
+            ys.push_back(zs);
+        }
+        kind_model.push_back(ys);
+    }
+    return kind_model;
+}*/
+
 Observation TreeSim::getObervation(int i){
     return trees[i]->getLastObservation();
 }
@@ -238,6 +300,9 @@ bool TreeSim::step(Observation prev_observation){
     for(Tree* tree : trees){
         running = tree->growCycle(model,prev_observation) || running;
         
+        energy_log.push_back(trees[log_index]->getEnergy());
+        power_log.push_back(trees[log_index]->getPower());
+        obervation_log.push_back(trees[log_index]->getLastObservation());
     }
     return running;
 }

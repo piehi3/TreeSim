@@ -7,12 +7,18 @@
 #include <iostream>
 #include "Vec3i.hxx"
 
+#ifndef NO_PYBIND
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
 namespace py = pybind11;
+#endif
+
+
 
 class Stratagy;
+class RandomStratagy;
 
 enum KIND {LEAF=0,BRANCH=1,KILL=9,ERROR_KIND = -1,EMPTY=-2};
 
@@ -31,13 +37,15 @@ static const int MODEL_X=32;
 static const int MODEL_Y=32;
 static const int MODEL_Z=32;
 
-static const int OBSERVATION_SIZE=10;
+static const int OBSERVATION_SIZE=11;
 
 class Tree;//forward declaation 
 class Cell;
 
 //CXX14 standar to simplify
-typedef std::array<std::array<std::array<Cell*, MODEL_X>,MODEL_Y>,MODEL_Z> Model;
+typedef std::array<std::array<std::array<Cell*, MODEL_Z>,MODEL_Y>,MODEL_X> Model;
+typedef std::array<std::array<std::array<KIND, MODEL_Z>,MODEL_Y>,MODEL_X> KINDModel;
+//typedef std::array<Cell*, MODEL_X,MODEL_Y,MODEL_Z> Model;
 
 typedef std::array<double,OBSERVATION_SIZE> Observation;
 
@@ -86,7 +94,7 @@ public:
     Cell(){};
     Cell(Tree* tree,KIND kind,double opasity,Vec3i pos
     ,double power_input,double power_max_output,double energy_to_builds);
-    Observation getObservation(Model &model);
+    Observation getObservation(Model &model, int move);
     virtual double getPowerOutput(Model &model) = 0;
     virtual double getPowerInput(Model &model);
     virtual double getPowerNet(Model &model);
@@ -112,12 +120,14 @@ public:
 
 class Leaf: public Cell{
 public:
+    Leaf(){};
     Leaf(Tree* tree, Vec3i pos);
     double getPowerOutput(Model &model) override;
 };
 
 class Branch: public Cell{
 public:
+    Branch(){};
     Branch(Tree* tree, Vec3i pos);
     inline double getPowerOutput(Model &model) override {return 0.0;};
 };
@@ -140,37 +150,47 @@ public:
     bool growCycle(Model &model,Observation ob, int max_iter=100);
     bool addCell(Model &model,KIND kind,Vec3i pos,Cell* growth_cell);
     Observation getLastObservation();
+    
+    inline ~Tree(){
+        for(Cell* cell:cells)
+            delete cell;
+        cells.clear();
+    }
 
 };
-
-void py_init_tree(py::module& tm) {
-    py::class_<Tree>(tm, "Tree")
-        .def(py::init<double>())
-        .def("getEnergy", &Tree::getEnergy)
-        .def("getPower", &Tree::getPower)
-        .def("getLastObservation", &Tree::getLastObservation);
-}
 
 class TreeSim{
 private:
     Model model;
     Tree* tree;//main tree for singel network testing
     std::vector<Tree*> trees;
+    std::vector<double> power_log;
+    std::vector<double> energy_log;
+    std::vector<Observation> obervation_log;
+    int log_index;
 
 public:
+    inline size_t MODEL_X_MAX(){return MODEL_X;};
+    inline size_t MODEL_Y_MAX(){return MODEL_Y;};
+    inline size_t MODEL_Z_MAX(){return MODEL_Z;};
+    inline std::vector<double> getPowerLog() {return power_log;};
+    inline std::vector<double> getEnergyLog() { return energy_log;};
+    inline std::vector<Observation> getObervationLog() { return obervation_log;};
+    inline void setLogTree(int i) {log_index = i;};
     TreeSim();
     void createTree(Vec3i pos,Stratagy* stategy, double init_energy=10.0);
     bool step(Observation prev_observation);
     Observation getObervation(int i);
-};
+    #ifndef NO_PYBIND
+    py::array_t<KIND> getModel();
+    #endif
 
-void py_init_treesim(py::module& tm) {
-    py::class_<TreeSim>(tm, "TreeSim")
-        .def(py::init<>())
-        .def("createTree", &TreeSim::createTree)
-        .def("step", &TreeSim::step)
-        .def("getObervation", &TreeSim::getObervation);
-}
+    inline ~TreeSim(){
+        for(Tree* tree: trees)
+            delete tree;
+        trees.clear();
+    };
+};
 
 class Stratagy{
 public:
